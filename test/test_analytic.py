@@ -1,4 +1,4 @@
-# from dev import AnalyticTesting
+from analyticdev import AnalyticTesting
 import pytest
 import pandas as pd
 import numpy as np

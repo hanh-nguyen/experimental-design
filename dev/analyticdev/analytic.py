@@ -78,3 +78,7 @@ class AnalyticTesting:
         lwr_bnd = self.con_conv - self._sd_con * self._z_score
         upr_bnd = self.con_conv + self._sd_con * self._z_score
         return lwr_bnd, upr_bnd
+
+
+# if __name__ == "__main__":
+
