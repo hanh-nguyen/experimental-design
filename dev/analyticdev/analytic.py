@@ -1,84 +1,64 @@
 from scipy import stats
+import numpy as np
 
 
 class AnalyticTesting:
-    def __init__(self, test_conv, con_conv, ci=0.95):
-        self.test_conv = test_conv
-        self.con_conv = con_conv
-        self.lift = self.test_conv - self.con_conv
-        self.ci = ci
-        self._z_score = stats.norm.isf((1 - self.ci) / 2)
-
-    def update_sizes(
-        self, total_size=None, con_ratio=None, test_size=None, con_size=None
-    ):
-        if (total_size != None) & (con_ratio != None):
-            self.test_size = round(total_size * (1 - con_ratio))
-            self.con_size = round(total_size * con_ratio)
-        else:
-            self.test_size = test_size
-            self.con_size = con_size
-        self._sd_test = (
-            (self.test_conv * (1 - self.test_conv)) / self.test_size
-        ) ** 0.5
-        self._sd_con = ((self.con_conv * (1 - self.con_conv)) / self.con_size) ** 0.5
-
-    def update_ci(self, new_ci):
-        self.ci = new_ci
-        self._z_score = stats.norm.isf((1 - self.ci) / 2)
-
-    def _get_sd(self):
+    def __init__(self, confidence=0.95):
         """
-        Calculate the standard deviation of the lift
+        confidence: confidence level, = 1 - alpha (Type I error rate)
         """
-        self._sd = (
-            (self.test_conv * (1 - self.test_conv)) / self.test_size
-            + (self.con_conv * (1 - self.con_conv)) / self.con_size
-        ) ** 0.5
-        return self._sd
+        self.confidence = confidence
 
-    def get_ci(self):
+    def power(self, p_null, p_alt, n_null, n_alt):
         """
-        Calculate the confidence interval of the lift
-        Assumptions: lift > 0, or test ratio > control ratio
-
-        Returns:
-        Lower bound and upper bound of the lift
-        """
-        lwr_bnd = self.lift - self._sd * self._z_score
-        upr_bnd = self.lift + self._sd * self._z_score
-        return lwr_bnd, upr_bnd
-
-    def get_pvalue(self):
-        """
-        Calculate p-value of the lift between two ratios given their sample sizes
-        """
-        lift = -abs(self.test_conv - self.con_conv)
-        p_value = 2 * stats.norm.cdf(lift, loc=0, scale=self._get_sd())
-        return p_value
-
-    def get_ci_test(self):
-        """
-        Calculate the confidence interval of the test conversion rate
+        Compute the power of detecting the difference in two populations with different proportion parameters, given a desired alpha rate.
         
-        Returns:
-        Lower bound and upper bound of the lift
+        Input parameters:
+            p_null    : base success rate under null hypothesis (i.e control response rate)
+            p_alt     : desired success rate to be detected, must be larger than p_null (i.e test response rate)
+            n_null    : number of observations in the control group
+            n_alt     : number of observations in the test group
+            
+        Output value:
+        power : Power to detect the desired difference, under the null.
         """
-        lwr_bnd = self.test_conv - self._sd_test * self._z_score
-        upr_bnd = self.test_conv + self._sd_test * self._z_score
-        return lwr_bnd, upr_bnd
+        se_null = np.sqrt(2 * p_null * (1 - p_null) / n_null)
+        null_dist = stats.norm(loc=0, scale=se_null)
+        crit_val = null_dist.ppf(self.confidence)
 
-    def get_ci_con(self):
+        se_alt = np.sqrt(p_null * (1 - p_null) / n_null + p_alt * (1 - p_alt) / n_alt)
+        alt_dist = stats.norm(loc=p_alt - p_null, scale=se_alt)
+        beta = alt_dist.cdf(crit_val)
+
+        return 1 - beta
+
+    def experiment_size(self, p_null, p_alt, power=0.80):
         """
-        Calculate the confidence interval of the test conversion rate
+        Compute the minimum number of samples needed to achieve a desired power level for a given effect size.
         
-        Returns:
-        Lower bound and upper bound of the lift
+        Input parameters:
+            p_null     : base success rate under null hypothesis
+            p_alt      : desired success rate to be detected
+            power      : 1 - beta (beta: Type-II error rate)
+        
+        Output value:
+            n : Number of samples required for each group to obtain desired power
         """
-        lwr_bnd = self.con_conv - self._sd_con * self._z_score
-        upr_bnd = self.con_conv + self._sd_con * self._z_score
-        return lwr_bnd, upr_bnd
+        # Get necessary z-scores and standard deviations (@ 1 obs per group)
+        z_null = stats.norm.ppf(self.confidence)
+        z_alt = stats.norm.ppf(1 - power)
+        sd_null = np.sqrt(2 * p_null * (1 - p_null))
+        sd_alt = np.sqrt(p_null * (1 - p_null) + p_alt * (1 - p_alt))
+
+        # Compute and return minimum sample size
+        p_diff = p_alt - p_null
+        n = ((z_null * sd_null - z_alt * sd_alt) / p_diff) ** 2
+        return np.ceil(n)
 
 
-# if __name__ == "__main__":
+def main():
+    print(AnalyticTesting().experiment_size(0.0017, 0.0024))
 
+
+if __name__ == "__main__":
+    main()
