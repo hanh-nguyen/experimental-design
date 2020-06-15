@@ -77,6 +77,11 @@ class TwoSamplesProportion(TwoSamples):
         self.p_diff = p_alt - p_null
 
     def update_size(self, n_null, n_alt):
+        """
+        Input parameters:
+            n_null    : number of observations in the control group
+            n_alt     : number of observations in the test group
+        """
         self.n_null = n_null
         self.n_alt = n_alt
         self.p_pooled = ((self.p_null * self.n_null) + (self.p_alt * self.n_alt)) / (
@@ -99,7 +104,6 @@ class TwoSamplesProportion(TwoSamples):
         Compute the p-value of the observed difference through simulation.
         If p-value < alpha, the difference is statistically significant.
         """
-
         result_null = np.random.binomial(self.n_null, self.p_pooled, trials)
         result_alt = np.random.binomial(self.n_alt, self.p_pooled, trials)
         samples = result_alt / self.n_alt - result_null / self.n_null
@@ -115,36 +119,24 @@ class TwoSamplesProportion(TwoSamples):
 
     def power(self):
         """
-        Compute the power of detecting the difference in two populations with different proportion parameters, given a desired alpha rate.
-        
-        Input parameters:
-            
-            n_null    : number of observations in the control group
-            n_alt     : number of observations in the test group
-            
-        Output value:
-        power : Power to detect the desired difference, under the null.
+        compute the power to detect the desired difference between two success rates, under the null.
+        power = 1 - beta (beta: Type-II error rate)
         """
         se_null = np.sqrt(2 * self.p_null * (1 - self.p_null) / self.n_null)
         null_dist = stats.norm(loc=0, scale=se_null)
         crit_val = null_dist.ppf(1 - self.alpha)
-
         se_alt = np.sqrt(
             self.p_null * (1 - self.p_null) / self.n_null
             + self.p_alt * (1 - self.p_alt) / self.n_alt
         )
         alt_dist = stats.norm(loc=self.p_diff, scale=se_alt)
         beta = alt_dist.cdf(crit_val)
-
         return 1 - beta
 
     def minimum_size(self, power=0.80):
         """
         Compute the minimum number of samples needed to achieve a desired power level for a given effect size.
-        
-        Input parameters:
-            power : 1 - beta (beta: Type-II error rate)
-        
+
         Output value:
             n : Number of samples required for each group to obtain desired power
         """
