@@ -1,10 +1,12 @@
 ## experimental-design
-An analysis toolkit to help answer questions:
-- what is the minimum size for an A/B test?
+An analysis toolkit focuses on design and analysis of A/B tests:
+- what is the minimum size with enough statistical power?
 - What is the confidence interval of a proportion or a mean?
 - Is the difference between control and test conversion rates statistically and practically significant?
 
 I also introduced different approaches to answer those questions, including inferential statistics and simulation.
+
+I set up abstract classes to organize different types of metrics (proportion or mean) and tests (one sample vs two samples).
 
 ### Instructions
 
