@@ -173,7 +173,6 @@ def main():
     print(
         OneSampleProportion(0.5, 690203).confidence_interval()
     )  # (0.4988204138245942, 0.5011795861754058)
-    twosamples = TwoSamplesProportion(0.1, 0.12)
 
 
 if __name__ == "__main__":
