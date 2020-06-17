@@ -41,26 +41,49 @@ class TwoSamples(ExperimentalDesign):
 
 
 class OneSampleProportion(OneSample):
-    def __init__(self, p, n, alpha=0.05):
+    def __init__(self, p_null, alpha=0.05):
+        """
+        p_null: expected proportion (under null hypothesis)
+        """
         OneSample.__init__(self)
-        self.p = p
-        self.n = n
+        self.p_null = p_null
         self.alpha = alpha
 
-    def pvalue(self):
-        pass
+    def update_size(self, n_obs, n_success):
+        """
+        n_obs    : number of observations
+        n_success: number of 'successes', i.e. number of heads when flipping coints, number of conversion in a targeting campaign
+        """
+        self.n = n_obs
+        self.n_success = n_success
+        self.sd = np.sqrt(self.p_null * (1 - self.p_null) * self.n)
 
-    def pvalue_sim(self):
-        pass
+    def pvalue(self):
+        """
+        To get a precise p-value, you should also perform a continuity correction, either adding or subtracting 0.5 to the total count before computing the area underneath the curve. 
+        i.e. If we had 415 / 850 assigned to the control group, then the normal approximation would take the area to the left of  (415+0.5)/850=0.489  and to the right of  (435−0.5)/850=0.511
+        """
+        if self.n_success < self.p_null * self.n:
+            n_alt = self.n_success + 0.5
+        else:
+            n_alt = self.n_success - 0.5
+        z = (n_alt - self.p_null * self.n) / self.sd
+        return 2 * stats.norm.cdf(z)
+
+    def pvalue_sim(self, trials=100000):
+        samples = np.random.binomial(self.n, self.p_null, trials)
+        left = np.min(self.n_success, self.n * self.p_null)
+        right = np.max(self.n_success, self.n * self.p_null)
+        return np.logical_or(samples <= left, samples >= right).mean()
 
     def confidence_interval(self):
         """
         Compute the confidence interval using an expected rate.
         If the observed rate is NOT within the interval, it is statistically different from the expected rate.
         """
-        sd = np.sqrt(self.p * (1 - self.p) / self.n)
+        sd = np.sqrt(self.p_null * (1 - self.p_null) / self.n)
         me = sd * stats.norm.ppf(1 - self.alpha / 2)
-        return (self.p - me, self.p + me)
+        return (self.p_null - me, self.p_null + me)
 
 
 class TwoSamplesProportion(TwoSamples):
@@ -78,9 +101,8 @@ class TwoSamplesProportion(TwoSamples):
 
     def update_size(self, n_null, n_alt):
         """
-        Input parameters:
-            n_null    : number of observations in the control group
-            n_alt     : number of observations in the test group
+        n_null    : number of observations in the control group
+        n_alt     : number of observations in the test group
         """
         self.n_null = n_null
         self.n_alt = n_alt
@@ -165,6 +187,7 @@ def main():
     print(
         OneSampleProportion(0.5, 690203).confidence_interval()
     )  # (0.4988204138245942, 0.5011795861754058)
+    print(OneSampleProportion(0.1, 106319).confidence_interval())
 
 
 if __name__ == "__main__":
