@@ -71,6 +71,10 @@ class OneSampleProportion(OneSample):
         return 2 * stats.norm.cdf(z)
 
     def pvalue_sim(self, trials=100000):
+        """
+        Compute the p-value of the observed difference through simulation.
+        If p-value < alpha, the difference is statistically significant.
+        """
         samples = np.random.binomial(self.n, self.p_null, trials)
         left = np.min(self.n_success, self.n * self.p_null)
         right = np.max(self.n_success, self.n * self.p_null)
