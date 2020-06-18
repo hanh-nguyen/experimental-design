@@ -21,7 +21,7 @@ cd experimental-design
 * Install dependencies
 
 ``` shell
-python -m pip install requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 * Run unit tests
