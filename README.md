@@ -1,11 +1,12 @@
 ## experimental-design
 An analysis toolkit focuses on design and analysis of A/B tests:
 - what is the minimum sample size with enough statistical power?
-- What is the confidence interval of a proportion or a mean?
-- Is the difference between control and test conversion rates statistically and practically significant?
+- What is the confidence interval of a proportion?
+- Is the difference between two conversion rates or two average balances statistically and practically significant?
 
 I introduced different approaches to answer those questions, including standard hypothesis tests, non-parametric tests and simulation.
 
+__This project is a work in progress.__
 
 ### Instructions
 
